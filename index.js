@@ -15,7 +15,13 @@ function taggedHash(tag, msg) {
     const tagHash = hash(tag);
     return hash(concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
 }
-
+function branch_from_tlv(alltlv, tlv){
+    l=taggedHash(Buffer.from('LnLeaf'),tlv).toString('hex')
+    lnonce=taggedHash(concat([Buffer.from('LnAll'), Buffer.from(alltlv,'hex')]),tlv).toString('hex')
+    smallerSHA256=l<lnonce?l:lnonce
+    greaterSHA256=l>lnonce?l:lnonce
+    return taggedHash(Buffer.from('LnBranch'),smallerSHA256+greaterSHA256).toString('hex')
+}
 function leaves(list_of_nodes){
     parents=[]
     if(list_of_nodes.length % 2==0){
@@ -137,7 +143,6 @@ function convert (data, inBits, outBits) {
     if (bits > 0) {
       result.push((value << (outBits - bits)) & maxV)
     }
-  
     return result
 }
 function wordsToBuffer (words, trim) {
@@ -244,8 +249,12 @@ function decode(paymentRequest){
     // console.log(decode_tu64(words_8bit.slice(2,3)))
     const tags = []
     const data= []
+    const tlvs=[]
+    // console.log(words_8bit)
     while(words_8bit.length){
+        let tlvs=''
         const tagCode = words_8bit[0].toString()
+        tlvs+=tagCode
         tagName = TAGNAMES[tagCode] || "unknownTagName"
         parser = TAGPARSERS[tagCode] 
         words_8bit = words_8bit.slice(1)
@@ -258,9 +267,12 @@ function decode(paymentRequest){
         }
         if(tagCode=='0')break
         tagLength = words_8bit.slice(0,1)
+        tlvs+=tagLength.toString()
         words_8bit = words_8bit.slice(1)
         tagWords = words_8bit.slice(0, tagLength)
         words_8bit = words_8bit.slice(tagLength)
+        // console.log("tagWords")
+        // console.log(tagWords.toString())
         // if(tagCode=='40'){
         //     console.log(tagWords)
         //     // console.log(parseInt( Buffer.from(tagWords.slice(0,4)).toString('hex'),16))
@@ -270,7 +282,7 @@ function decode(paymentRequest){
         //     break
         // }
         // if(tagCode=='unknownTagName')continue
-        console.log(tagCode)
+        // console.log(tagCode)
         //See: parsers for more comments
         tags.push({
         tagName,
