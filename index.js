@@ -15,6 +15,22 @@ function taggedHash(tag, msg) {
     const tagHash = hash(tag);
     return hash(concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
 }
+
+function leaves(list_of_nodes){
+    parents=[]
+    if(list_of_nodes.length % 2==0){
+        for(let i=0;i<list_of_nodes.length;i+=2){
+            parents.push(taggedHash(Buffer.from('LnBranch'),list_of_nodes[i]+list_of_nodes[i+1]).toString('hex'))
+        }
+    }
+    else{
+        for(let i=0;i<list_of_nodes.size()-1;i+=2){
+            parents.push(taggedHash(Buffer.from('LnBranch'),list_of_nodes[i]+list_of_nodes[i+1]).toString('hex'))
+        }
+        parents.push(list_of_nodes[list_of_nodes.length-1])
+    }
+    return parents;
+}
 const TAGCODES = {
     chains: 2,
     offer_id:4,
