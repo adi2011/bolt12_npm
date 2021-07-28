@@ -1,3 +1,5 @@
+const sha256 = require('js-sha256');
+const concat = Buffer.concat;
 const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const isBech32={};
 const ALPHABET_MAP = {};
@@ -28,12 +30,16 @@ function leaves(list_of_nodes){
     parents=[]
     if(list_of_nodes.length % 2==0){
         for(let i=0;i<list_of_nodes.length;i+=2){
-            parents.push(taggedHash(Buffer.from('LnBranch'),list_of_nodes[i]+list_of_nodes[i+1]).toString('hex'))
+            smallerSHA256=list_of_nodes[i]<list_of_nodes[i+1]?list_of_nodes[i]:list_of_nodes[i+1]
+            greaterSHA256=list_of_nodes[i]>list_of_nodes[i+1]?list_of_nodes[i]:list_of_nodes[i+1]
+            parents.push(taggedHash(Buffer.from('LnBranch'),smallerSHA256+greaterSHA256).toString('hex'))
         }
     }
     else{
-        for(let i=0;i<list_of_nodes.size()-1;i+=2){
-            parents.push(taggedHash(Buffer.from('LnBranch'),list_of_nodes[i]+list_of_nodes[i+1]).toString('hex'))
+        for(let i=0;i<list_of_nodes.length-1;i+=2){
+            smallerSHA256=list_of_nodes[i]<list_of_nodes[i+1]?list_of_nodes[i]:list_of_nodes[i+1]
+            greaterSHA256=list_of_nodes[i]>list_of_nodes[i+1]?list_of_nodes[i]:list_of_nodes[i+1]
+            parents.push(taggedHash(Buffer.from('LnBranch'),smallerSHA256+greaterSHA256).toString('hex'))
         }
         parents.push(list_of_nodes[list_of_nodes.length-1])
     }
@@ -214,6 +220,20 @@ function orderKeys (unorderedObj) {
     })
     return orderedObj
 }
+function signature_valid(tlv,sign){
+    let alltlvs=''
+    for(let i=0;i<tlv.length;i++)
+        alltlvs+=tlv[i]
+    let merkle_nodes=[]
+    for(let i=0;i<tlv.length;i++)merkle_nodes[merkle_nodes.length]=branch_from_tlv(alltlvs,tlv[i])
+    while(merkle_nodes.length!=1){
+        merkle_nodes=leaves(merkle_nodes)
+    }
+    console.log(merkle_nodes)
+    
+}
+// console.log("branch is")
+// console.log(branch_from_tlv("010203e802080000010000020003","010203e8"))
 function decode(paymentRequest){
     if (typeof paymentRequest !== 'string') throw new Error('Lightning Payment Request must be string')
     paymentRequest=paymentRequest.replace('+','')
@@ -250,7 +270,7 @@ function decode(paymentRequest){
     // console.log(decode_tu64(words_8bit.slice(2,3)))
     const tags = []
     const data= []
-    const tlvs=[]
+    const tlv=[]
     // console.log(words_8bit)
     while(words_8bit.length){
         let tlvs=''
@@ -285,20 +305,28 @@ function decode(paymentRequest){
         //     console.log(tlvs)
         //     break
         // }
-        console.log(tlvs)
+        // console.log(tlvs)
+        console.log(typeof parseInt(tagCode))
+        if(parseInt(tagCode)<240){
+            tlv[tlv.length]=tlvs
+        }
         // if(tagCode=='unknownTagName')continue
-        // console.log(tagCode)
+        console.log(tagCode)
         //See: parsers for more comments
         tags.push({
         tagName,
         data: parser(tagWords) // only fallback address needs coinNetwork
         })
+        if(tagCode=="240")
+            sign=parser(tagWords)
     }
     let final_result={
         tags,
         "type":type
     }
-    // console.log(final_result)
+    signature_valid(tlv,sign)
+    console.log(sign)
+    console.log(final_result)
 }
 decode('lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s')
 // decode('bc1qeqzjk7vume5wmrdgz5xyehh54cchdjag6jdmkj')
