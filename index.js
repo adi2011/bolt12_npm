@@ -15,6 +15,7 @@ function taggedHash(tag, msg) {
     const tagHash = hash(tag);
     return hash(concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
 }
+
 function branch_from_tlv(alltlv, tlv){
     l=taggedHash(Buffer.from('LnLeaf'),tlv).toString('hex')
     lnonce=taggedHash(concat([Buffer.from('LnAll'), Buffer.from(alltlv,'hex')]),tlv).toString('hex')
@@ -22,6 +23,7 @@ function branch_from_tlv(alltlv, tlv){
     greaterSHA256=l>lnonce?l:lnonce
     return taggedHash(Buffer.from('LnBranch'),smallerSHA256+greaterSHA256).toString('hex')
 }
+
 function leaves(list_of_nodes){
     parents=[]
     if(list_of_nodes.length % 2==0){
@@ -220,7 +222,6 @@ function decode(paymentRequest){
         if(!paymentRequest.charAt(i) in isBech32)
             throw new Error('Not a proper lightning payment request')
     }
-    console.log(paymentRequest)
     if (paymentRequest.slice(0, 2).toLowerCase() !== 'ln') throw new Error('Not a proper lightning payment request')
     if (paymentRequest.charAt(3)!='1')throw new Error('Separator not present')
     encodedData=paymentRequest.slice(4)
@@ -254,7 +255,7 @@ function decode(paymentRequest){
     while(words_8bit.length){
         let tlvs=''
         const tagCode = words_8bit[0].toString()
-        tlvs+=tagCode
+        tlvs += Buffer.from(words_8bit.slice(0,1)).toString('hex')
         tagName = TAGNAMES[tagCode] || "unknownTagName"
         parser = TAGPARSERS[tagCode] 
         words_8bit = words_8bit.slice(1)
@@ -266,21 +267,25 @@ function decode(paymentRequest){
             continue
         }
         if(tagCode=='0')break
+
         tagLength = words_8bit.slice(0,1)
-        tlvs+=tagLength.toString()
+        tlvs+=(Buffer.from(tagLength)).toString('hex')
         words_8bit = words_8bit.slice(1)
         tagWords = words_8bit.slice(0, tagLength)
         words_8bit = words_8bit.slice(tagLength)
         // console.log("tagWords")
         // console.log(tagWords.toString())
-        // if(tagCode=='40'){
-        //     console.log(tagWords)
+        tlvs+=(Buffer.from(tagWords)).toString('hex')
+        // if(tagCode=='8'){
+        //     // console.log(tagWords)
         //     // console.log(parseInt( Buffer.from(tagWords.slice(0,4)).toString('hex'),16))
-        //     console.log(parser(tagWords))
+        //     tlvs+=(Buffer.from(tagWords)).toString('hex')
         //     // console.log(words_8bit.slice(0,18))
         //     // console.log(decodeTu(words_8bit.slice(2,3)))
+        //     console.log(tlvs)
         //     break
         // }
+        console.log(tlvs)
         // if(tagCode=='unknownTagName')continue
         // console.log(tagCode)
         //See: parsers for more comments
@@ -293,9 +298,9 @@ function decode(paymentRequest){
         tags,
         "type":type
     }
-    console.log(final_result)
+    // console.log(final_result)
 }
-decode('l+ni1qgsqvgnwgcg35z6ee2h3yczraddm72xrfua9uve2rlrm9deu7xyfzrcyyprh7m68pmdr6rr0zqrfl7gtfu3jthqqrzpqjmu8vnmwny9swty4xzqpqy9quun9vd6hyunfdenjqar9wd6qcrvqqqqqqqqqqqqqqqqzsgqpuggz953rvg9rtxj8lalh43z8epwydjfrmffn3y3p5qz5cywpu09rr4vjgqgpycss9zvdnt7uerp970wvapvfnd7dut079yf0mr5tkzpu4068lv23fd6y9qz9lg08ng4zpczkdfjzr02pxp55c2htgzuq67hrtr7qpw9hesgraze7e29d2cvu9sqhwtspq5epqj8efghvyq5cvvhd7350vt9t4g2qq306reu67pqw4tj46tcr3fxqyqwav4xmu5mkesvyhdujf28wyrm5g9jwf5nehtsge8zlp5wnndzh5z5j7g44jfzu0dw09wtz97jt55m3cvdzsktqwu')
+decode('lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s')
 // decode('bc1qeqzjk7vume5wmrdgz5xyehh54cchdjag6jdmkj')
 
 
