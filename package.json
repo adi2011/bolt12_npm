@@ -19,5 +19,8 @@
     "package"
   ],
   "author": "Aditya",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "js-sha256": "^6.14.5"
+  } 
 }

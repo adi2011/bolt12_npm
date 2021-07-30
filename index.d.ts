@@ -1,9 +1,6 @@
 export declare type decodedinfo={
     description:string
     node_id:string
-
-
-
 }
 
 

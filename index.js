@@ -3,6 +3,7 @@ const concat = Buffer.concat;
 const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const isBech32={};
 const ALPHABET_MAP = {};
+
 for (let z = 0; z < ALPHABET.length; z++) {
     const x = ALPHABET.charAt(z);
     ALPHABET_MAP[x] = z;
@@ -89,7 +90,7 @@ const TAGPARSERS = {
     4: (words) => wordsToBuffer(words, true).toString('hex'),
     6: (words) => wordsToBuffer(words, true).toString('utf8'), // string variable length
     8: (words) => decodeTu(words),
-    10: (words) => wordsToBuffer(words, true).toString('utf8'), // string variable length
+    10: (words) => wordsToBuffer(words, false).toString('utf8'), // string variable length
     12: features,
     14: (words) => decodeTu(words),
     16: (words) => wordsToBuffer(words, true).toString('hex'),
@@ -226,14 +227,13 @@ function signature_valid(tlv,sign){
         alltlvs+=tlv[i]
     let merkle_nodes=[]
     for(let i=0;i<tlv.length;i++)merkle_nodes[merkle_nodes.length]=branch_from_tlv(alltlvs,tlv[i])
+    console.log(alltlvs)
+    console.log(merkle_nodes)
     while(merkle_nodes.length!=1){
         merkle_nodes=leaves(merkle_nodes)
     }
     console.log(merkle_nodes)
-    
 }
-// console.log("branch is")
-// console.log(branch_from_tlv("010203e802080000010000020003","010203e8"))
 function decode(paymentRequest){
     if (typeof paymentRequest !== 'string') throw new Error('Lightning Payment Request must be string')
     paymentRequest=paymentRequest.replace('+','')
@@ -286,7 +286,9 @@ function decode(paymentRequest){
             })
             continue
         }
-        if(tagCode=='0')break
+        if(tagCode=='0'){
+            break
+        }
 
         tagLength = words_8bit.slice(0,1)
         tlvs+=(Buffer.from(tagLength)).toString('hex')
@@ -306,7 +308,7 @@ function decode(paymentRequest){
         //     break
         // }
         // console.log(tlvs)
-        console.log(typeof parseInt(tagCode))
+        // console.log(typeof parseInt(tagCode))
         if(parseInt(tagCode)<240){
             tlv[tlv.length]=tlvs
         }
@@ -324,27 +326,13 @@ function decode(paymentRequest){
         tags,
         "type":type
     }
-    signature_valid(tlv,sign)
-    console.log(sign)
+    // console.log(paymentRequest)
     console.log(final_result)
+    console.log(tlv)
+    signature_valid(tlv,sign)
+    // console.log(sign)
 }
-decode('lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s')
-// decode('bc1qeqzjk7vume5wmrdgz5xyehh54cchdjag6jdmkj')
-
-
-
-/* 
-from typing import Tuple, Optional, Any
-import hashlib
-import binascii
-def tagged_hash(tag: str, msg: bytes) -> bytes:
-    tag_hash = hashlib.sha256(tag.encode()).digest()
-    return hashlib.sha256(tag_hash + tag_hash + msg).digest()
-print (tagged_hash('LnLeaf',b'\x01\x02\x03\xe8'))    
-# print(bytes.fromhex("010203e8"))
-print(b'g\xa2\xa9\x95C8\x90\xd8\xfe\x0c\x18\xa1vZ\xd1\x9e\x98\xf1\xfc\xfe\xff\x14\xc1:E\xbb\xc8\td\xa7\x8c\xf7'.hex())
-
-output:
-b'g\xa2\xa9\x95C8\x90\xd8\xfe\x0c\x18\xa1vZ\xd1\x9e\x98\xf1\xfc\xfe\xff\x14\xc1:E\xbb\xc8\td\xa7\x8c\xf7'
-67a2a995433890d8fe0c18a1765ad19e98f1fcfeff14c13a45bbc80964a78cf7 \matching!\
-*/
+decode("lno1pg257enxv4ezq+ cneype82um50ynhxgrwdajx283qfwdpl28qqmc78ymlvhmxcsywdk5wrjnj36jryg488qwlrnzyjczlqs85ck65ycmkdk92smwt9zuewdzfe7v4aavvaz5kgv9mkk63v3s0ge0f099kssh3yc95qztx504hu92hnx8ctzhtt08pgk0texz0509tk")
+module.exports={
+    decode
+}
